@@ -1,10 +1,11 @@
 'use strict';
-
-var emitter = require('contra/emitter');
-var crossvent = require('crossvent');
-var classes = require('./classes');
-var doc = document;
+//从现在开始才是真正的地狱 啊 真是太可怕了 为什么一个前端，你们能做到这么强大，应该说不愧是985的高材生吗？艾玛 这帮人都特么疯了啊
+var emitter = require('contra/emitter');   //负责给函数添加“添加事件的方法”
+var crossvent = require('crossvent');   //负责给节点加载事件。
+var classes = require('./classes');    //负责给节点添加一些类 
+var doc = document; 
 var documentElement = doc.documentElement;
+
 
 function dragula (initialContainers, options) {
   var len = arguments.length;
@@ -24,8 +25,11 @@ function dragula (initialContainers, options) {
   var _copy; // item used for copying
   var _renderTimer; // timer for setTimeout renderMirrorImage
   var _lastDropTarget = null; // last container item was over
+  //保持mousedown的上下文直到鼠标第一次移动事件发生
   var _grabbed; // holds mousedown context until first mousemove
 
+
+//设定options的默认值。
   var o = options || {};
   if (o.moves === void 0) { o.moves = always; }
   if (o.accepts === void 0) { o.accepts = always; }
@@ -39,7 +43,10 @@ function dragula (initialContainers, options) {
   if (o.direction === void 0) { o.direction = 'vertical'; }
   if (o.ignoreInputTextSelection === void 0) { o.ignoreInputTextSelection = true; }
   if (o.mirrorContainer === void 0) { o.mirrorContainer = doc.body; }
+  //这个是回调函数啊笨蛋你特么想什么呢。
 
+//如果想让你这次看代码的经历发挥最大作用，那么模仿就是你的唯一途径。
+//这里就是负责产生drake对象，赋予其事件相关的方法。这里还是要学习一个才行，感觉很牛逼的样子。
   var drake = emitter({
     containers: o.containers,
     start: manualStart,
@@ -50,7 +57,7 @@ function dragula (initialContainers, options) {
     canMove: canMove,
     dragging: false
   });
-
+  //注册事件的方法的第二个参数应该是一个事件！
   if (o.removeOnSpill === true) {
     drake.on('over', spillOver).on('out', spillOut);
   }
@@ -59,21 +66,32 @@ function dragula (initialContainers, options) {
 
   return drake;
 
+
+  //查看drake.containers中
+  //isContainer这个回调函数的书写方法一定要牢记于心呢
+  //说实话，这个框架我要是能理解百分之五十我觉得我真的就很牛逼了
   function isContainer (el) {
     return drake.containers.indexOf(el) !== -1 || o.isContainer(el);
   }
 
+//这个函数负责干什么呢，这个函数主要负责那啥，添加删除事件啊
+//下方这几个事件注册函数很重要呢，差不多统领全局的赶脚？
+//什么参数也没有的时候是增加的意思呢。
   function events (remove) {
     var op = remove ? 'remove' : 'add';
     touchy(documentElement, op, 'mousedown', grab);
     touchy(documentElement, op, 'mouseup', release);
   }
 
+
+//这个函数主要用于添加或删除mousemove事件
   function eventualMovements (remove) {
     var op = remove ? 'remove' : 'add';
     touchy(documentElement, op, 'mousemove', startBecauseMouseMoved);
   }
 
+
+//
   function movements (remove) {
     var op = remove ? 'remove' : 'add';
     crossvent[op](documentElement, 'selectstart', preventGrabbed); // IE8
@@ -85,16 +103,23 @@ function dragula (initialContainers, options) {
     release({});
   }
 
+
+
+  //保持mousedown的上下文直到鼠标第一次移动事件发生
   function preventGrabbed (e) {
     if (_grabbed) {
       e.preventDefault();
     }
   }
 
+
+//这个方法我感觉应该是关键方法
   function grab (e) {
+//在这先获得了事件发生的所有坐标。
     _moveX = e.clientX;
     _moveY = e.clientY;
 
+//这个函数能检测出到底哪个鼠标按键伴随着这个事件被按下，如果不是 1 号，或者按了meta key也不会激活的
     var ignore = whichMouseButton(e) !== 1 || e.metaKey || e.ctrlKey;
     if (ignore) {
       return; // we only care about honest-to-god left clicks and touch events
@@ -106,6 +131,8 @@ function dragula (initialContainers, options) {
     }
     _grabbed = context;
     eventualMovements();
+
+    //下面这段代码屏蔽了除文本框点击事件之外的所有事件。
     if (e.type === 'mousedown') {
       if (isInput(item)) { // see also: https://github.com/bevacqua/dragula/issues/208
         item.focus(); // fixes https://github.com/bevacqua/dragula/issues/176
@@ -115,6 +142,8 @@ function dragula (initialContainers, options) {
     }
   }
 
+
+//这个函数又是干嘛的呢，好期待啊
   function startBecauseMouseMoved (e) {
     if (!_grabbed) {
       return;
@@ -151,15 +180,23 @@ function dragula (initialContainers, options) {
     drag(e);
   }
 
+//item是被选中的元素呢。
+//猜测：这个函数的作用应该是标注拖动事件能否开始。
   function canStart (item) {
+    //_mirror代表任何正在被拖动元素显示的阴影，dragging表示有什么元素正在被拖动
     if (drake.dragging && _mirror) {
       return;
     }
+    //不会拖动元素自身呢
     if (isContainer(item)) {
       return; // don't drag container itself
     }
     var handle = item;
+    //循环的条件是有父节点并且父节点不是容器。
     while (getParent(item) && isContainer(getParent(item)) === false) {
+      //这种回调函数的传参当然都是程序里默认有的啊
+
+      //如果调用的回调函数
       if (o.invalid(item, handle)) {
         return;
       }
@@ -168,6 +205,9 @@ function dragula (initialContainers, options) {
         return;
       }
     }
+
+
+    //这个sourse是容器呢
     var source = getParent(item);
     if (!source) {
       return;
@@ -176,20 +216,26 @@ function dragula (initialContainers, options) {
       return;
     }
 
+    //这四个参数是：
     var movable = o.moves(item, source, handle, nextEl(item));
     if (!movable) {
       return;
     }
 
+//这两个参数是被拉取的组件和原始的容器。
     return {
-      item: item,
-      source: source
+      item: item,  //被移动组件的最大值
+      source: source //包含组件的容器
     };
   }
 
+//如果能被移动则返回真，这封装的这是狠啊
   function canMove (item) {
     return !!canStart(item);
   }
+
+//必须加快速度啊，今天如果是熟悉，明天就是熟练，后天就得改了，还得看handsontable呢呀，真是蛋疼
+
 
   function manualStart (item) {
     var context = canStart(item);
@@ -198,6 +244,7 @@ function dragula (initialContainers, options) {
     }
   }
 
+  //这个函数的作用是：
   function start (context) {
     if (isCopy(context.item, context.source)) {
       _copy = context.item.cloneNode(true);
@@ -224,7 +271,10 @@ function dragula (initialContainers, options) {
     drop(item, getParent(item));
   }
 
+//有点开始深入事件内部的感觉了呢
+//鼠标动了，添加移动事件
   function ungrab () {
+    
     _grabbed = false;
     eventualMovements(true);
     movements(true);
@@ -354,6 +404,7 @@ function dragula (initialContainers, options) {
     }
   }
 
+//这个方法是整个程序的灵魂方法啊我擦
   function drag (e) {
     if (!_mirror) {
       return;
@@ -487,11 +538,13 @@ function dragula (initialContainers, options) {
     }
   }
 
+  //判断是不是copy模式呢，是的话返回真
   function isCopy (item, container) {
     return typeof o.copy === 'boolean' ? o.copy : o.copy(item, container);
   }
 }
 
+//还是处理事件的兼容性和事件的添加和删除（虽然只有三个事件呢）
 function touchy (el, op, type, fn) {
   var touch = {
     mouseup: 'touchend',
@@ -518,6 +571,9 @@ function touchy (el, op, type, fn) {
   }
 }
 
+
+
+
 function whichMouseButton (e) {
   if (e.touches !== void 0) { return e.touches.length; }
   if (e.which !== void 0 && e.which !== 0) { return e.which; } // see https://github.com/bevacqua/dragula/issues/261
@@ -525,9 +581,11 @@ function whichMouseButton (e) {
   var button = e.button;
   if (button !== void 0) { // see https://github.com/jquery/jquery/blob/99e8ff1baa7ae341e94bb89c3e84570c7c3ad9ea/src/event.js#L573-L575
     return button & 1 ? 1 : button & 2 ? 3 : (button & 4 ? 2 : 0);
+    //这段跟紧箍咒一样
   }
 }
 
+//这个函数的作用是获取文档相对于网页位置的偏移
 function getOffset (el) {
   var rect = el.getBoundingClientRect();
   return {
@@ -536,6 +594,12 @@ function getOffset (el) {
   };
 }
 
+
+
+
+
+//这个函数的作用是根据传进来的字符串参数来判断，另外还考虑到了兼容性，但是我觉得封装的好丑啊，怎么
+//能把兼容性作为封装的内容而把兼容性语句放在参数中呢
 function getScroll (scrollProp, offsetProp) {
   if (typeof global[offsetProp] !== 'undefined') {
     return global[offsetProp];
@@ -545,6 +609,7 @@ function getScroll (scrollProp, offsetProp) {
   }
   return doc.body[scrollProp];
 }
+
 
 function getElementBehindPoint (point, x, y) {
   var p = point || {};
@@ -561,7 +626,10 @@ function always () { return true; }
 function getRectWidth (rect) { return rect.width || (rect.right - rect.left); }
 function getRectHeight (rect) { return rect.height || (rect.bottom - rect.top); }
 function getParent (el) { return el.parentNode === doc ? null : el.parentNode; }
+function getParent2 (el) {return el.parentNode === doc ? null : el.parentNode; }
 function isInput (el) { return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || isEditable(el); }
+//这个函数是一个递归函数，具体作用是：
+//
 function isEditable (el) {
   if (!el) { return false; } // no parents were editable
   if (el.contentEditable === 'false') { return false; } // stop the lookup
@@ -569,6 +637,8 @@ function isEditable (el) {
   return isEditable(getParent(el)); // contentEditable is set to 'inherit'
 }
 
+
+//感觉每个函数都是一个宝库啊，那么这个nextEl到底有什么作用呢？
 function nextEl (el) {
   return el.nextElementSibling || manually();
   function manually () {
@@ -576,15 +646,19 @@ function nextEl (el) {
     do {
       sibling = sibling.nextSibling;
     } while (sibling && sibling.nodeType !== 1);
+    //在有节点并且节点的类型不是element的时候循环，否则停止循环
     return sibling;
   }
 }
+
+//这个函数主要负责触屏事件的处理，先不要看了吧。
 
 function getEventHost (e) {
   // on touchend event, we have to use `e.changedTouches`
   // see http://stackoverflow.com/questions/7192563/touchend-event-properties
   // see https://github.com/bevacqua/dragula/issues/34
   if (e.targetTouches && e.targetTouches.length) {
+    //我觉得这个函数应该是一次获得了多个焦点
     return e.targetTouches[0];
   }
   if (e.changedTouches && e.changedTouches.length) {
@@ -592,6 +666,7 @@ function getEventHost (e) {
   }
   return e;
 }
+//这个函数主要的功能是啥呢 是：
 
 function getCoord (coord, e) {
   var host = getEventHost(e);
